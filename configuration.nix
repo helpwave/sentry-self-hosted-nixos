@@ -1,4 +1,4 @@
-# /etc/nixos/
+# /etc/nixos/configuration.nix
 { config, pkgs, ... }:
 
 {
@@ -87,12 +87,14 @@
 
   # Docker und Docker Compose aktivieren
   services.dockerRegistry.enable = true;
-  virtualisation.docker.enable = true;
   virtualisation.docker.registries = [ "docker.io" ];
+  virtualisation.docker.enable = true;
+
+  # Docker-Services konfigurieren
   virtualisation.docker.services = [
     {
       name = "sentry";
-      image = "getsentry/sentry:latest"; # Ersetze dies durch die passende Version
+      image = "getsentry/sentry:latest";
       ports = [ "9000:9000" ];
       environment = {
         SENTRY_SECRET_KEY = "your_secret_key";
@@ -100,7 +102,34 @@
         SENTRY_REDIS_URL = "redis://localhost:6379";
       };
       volumes = [
-        { hostPath = "/var/lib/sentry"; containerPath = "/data" }
+        {
+          hostPath = "/var/lib/sentry";
+          containerPath = "/data";
+        }
+      ];
+    }
+    {
+      name = "clickhouse";
+      image = "clickhouse/clickhouse-server:latest";
+      ports = [
+        {
+          containerPort = 8123;
+          hostPort = 8123;
+        }
+        {
+          containerPort = 9000;
+          hostPort = 9000;
+        }
+      ];
+      volumes = [
+        {
+          hostPath = "/var/lib/clickhouse";
+          containerPath = "/var/lib/clickhouse";
+        }
+        {
+          hostPath = "/var/log/clickhouse-server";
+          containerPath = "/var/log/clickhouse-server";
+        }
       ];
     }
   ];

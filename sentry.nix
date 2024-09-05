@@ -2,9 +2,10 @@
 { config, pkgs, ... }:
 
 {
-  ## DINSTE: Sentry, PostgreSQL, Redis, Kafka, Zookeeper, Clickhouse, Symbolicator, Relay
+  ## DINSTE: Sentry, PostgreSQL, Redis, apache-kafka, Zookeeper, *Clickhouse*, Symbolicator, Relay.
+  ## und nachtreglich hinzugefügt nginx
 
-  # PostgreSQL und Redis wie vorher
+  # PostgreSQL
   services.postgresql = {
     enable = true;
     package = pkgs.postgresql_14;
@@ -14,13 +15,14 @@
     '';
   };
 
+  # Redis
   services.redis = {
     enable = true;
     package = pkgs.redis;
-    dataDir = "/var/lib/redis";
+    #dataDir = "/var/lib/redis";  # dataDir entfernt, da es nicht erforderlich ist
   };
 
-  # ZooKeeper und Kafka wie vorher
+  # ZooKeeper
   services.zookeeper = {
     enable = true;
     package = pkgs.zookeeper;
@@ -28,9 +30,10 @@
     clientPort = 2181;
   };
 
-  services.kafka = {
+  # Apache Kafka
+  services.apache-kafka = {
     enable = true;
-    package = pkgs.kafka;
+    package = pkgs.apacheKafka;
     settings = {
       "log.dirs" = "/var/lib/kafka-logs";
       "zookeeper.connect" = "localhost:2181";
@@ -40,16 +43,13 @@
     };
   };
 
-  # Clickhouse Service hinzufügen
-  services.clickhouse = {
-    enable = true;
-    package = pkgs.clickhouse;
-    settings = {
-      "listen_host" = "::";
-      "tcp_port" = 9000;
-      "http_port" = 8123;
-    };
-  };
+  # Clickhouse
+  #services.clickhouse = {
+  #  enable = true;
+  #  package = pkgs.clickhouse;
+  #  httpPort = 8123;
+  #  port = 9000;
+  #};
 
   # Symbolicator
   services.symbolicator = {
@@ -90,34 +90,32 @@
   };
 
   # Sentry Relay
-  services.relay = {
-    enable = true;
-    package = pkgs.relay;
-    settings = {
-      "bind" = "0.0.0.0:3000";
-      "upstream" = "http://localhost:9000";
-    };
-  };
+  #services.relay = {
+  #  enable = true;
+  #  package = pkgs.relay;
+  #  settings = {
+  #    "bind" = "0.0.0.0:3000";
+  #    "upstream" = "http://localhost:9000";
+  #  };
+  #};
 
-  # sentry upgrade
+  # Sentry-Upgrade
   environment.variables = {
     SENTRY_SECRET_KEY = "secret-key";
     SENTRY_DATABASE_URL = "postgres://sentry_user:password@localhost/sentry_db";
     SENTRY_REDIS_URL = "redis://localhost:6379";
   };
 
+  # Nginx Konfiguration
   services.nginx = {
     enable = true;
     virtualHosts."sentry.example.com" = {
+      listen = [ { addr = "0.0.0.0"; port = 3000; } ];
       root = "/var/www/sentry";
       locations."/" = {
         proxyPass = "http://localhost:9000";
+        proxySetHeader = "X-Relay-Host" "relay.example.com";  # Optional
       };
     };
   };
-
-  #conterner
-
-
-
 }
