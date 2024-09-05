@@ -18,59 +18,38 @@
     docker_27
   ];
 
-  # Sentry Self-Hosted Klonen und Setup
-  systemd.services.sentry-setup = {
-    description = "Setup Sentry Self-Hosted";
-    after = [ "docker.service" ];
-    wantedBy = [ "multi-user.target" ];
-
-    script = ''
-      if [ ! -d /var/lib/sentry-self-hosted ]; then
-        # Sicherstellen, dass wir mit root-Rechten arbeiten
-        sudo git clone https://github.com/getsentry/self-hosted /var/lib/sentry-self-hosted
-        cd /var/lib/sentry-self-hosted
-        sudo ./install.sh
-      fi
+  #services
+  services.postgresql = {
+    enable = true;
+    package = pkgs.postgresql_14;
+    dataDir = "/var/lib/postgresql/data";
+    extraConfig = ''
+      max_connections = 100
     '';
-
-    serviceConfig = {
-      Type = "oneshot";
-      RemainAfterExit = true;
+  };
+  services.redis = {
+    enable = true;
+    package = pkgs.redis;
+    dataDir = "/var/lib/redis";
+  };
+  services.zookeeper = {
+    enable = true;
+    package = pkgs.zookeeper;
+    dataDir = "/var/lib/zookeeper";
+    clientPort = 2181;
+  };
+  services.kafka = {
+    enable = true;
+    package = pkgs.kafka;
+    settings = {
+      "log.dirs" = "/var/lib/kafka-logs";
+      "zookeeper.connect" = "localhost:2181";
+      "broker.id" = 0;
+      "listeners" = "PLAINTEXT://localhost:9092";
+      "log.retention.hours" = 168;  # Default to 7 days
     };
   };
 
-  # Optional: Wenn du möchtest, dass Docker-Container automatisch beim Systemstart hochfahren
-  systemd.services.sentry-up = {
-    description = "Start Sentry Containers";
-    after = [ "docker.service" "sentry-setup.service" ];
-    wantedBy = [ "multi-user.target" ];
+  #conterner
 
-    serviceConfig = {
-      ExecStart = '' 
-        export PATH=$PATH:/usr/local/bin:/usr/bin:/bin
-        cd /var/lib/sentry-self-hosted
-        /usr/bin/docker-compose up -d
-      '';
-      Type = "oneshot";
-      RemainAfterExit = true;
-    };
-  };
-
-
-  # Optional: Wenn du möchtest, dass Docker-Container automatisch beim System herunterfahren gestoppt werden
-  systemd.services.sentry-down = {
-    description = "Stop Sentry Containers";
-    before = [ "shutdown.target" ];
-
-    script = ''
-      cd /var/lib/sentry-self-hosted
-      sudo docker-compose down
-    '';
-
-    serviceConfig = {
-      Type = "oneshot";
-    };
-
-    wantedBy = [ "shutdown.target" ];
-  };
 }
