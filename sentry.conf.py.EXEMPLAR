@@ -1,0 +1,35 @@
+DATABASES = {
+    'default': {
+        'ENGINE': 'sentry.db.postgres',
+        'NAME': 'sentry_db',
+        'USER': 'sentry_user',
+        'PASSWORD': 'your_password',
+        'HOST': 'localhost',
+        'PORT': '',
+    }
+}
+
+REDIS_OPTIONS = {
+    'hosts': {
+        0: {
+            'host': 'localhost',
+            'port': 6379,
+        }
+    }
+}
+
+KAFKA_CLUSTERS = {
+    'default': {
+        'bootstrap.servers': 'localhost:9092',
+    }
+}
+
+SNUBA = {
+    'hosts': ['localhost:1218'],
+}
+
+SYMBOLICATOR_OPTIONS = {
+    'url': 'http://localhost:3021',
+}
+
+SENTRY_RELAY_WHITELIST_URLS = ['localhost']
