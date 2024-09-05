@@ -23,12 +23,12 @@
   };
 
   # ZooKeeper
-  services.zookeeper = {
-    enable = true;
-    package = pkgs.zookeeper;
-    dataDir = "/var/lib/zookeeper";
-    clientPort = 2181;
-  };
+  #services.zookeeper = {
+  #  enable = true;
+  #  package = pkgs.zookeeper;
+  #  dataDir = "/var/lib/zookeeper";
+  #  clientPort = 2181;
+  #};
 
   # Apache Kafka
   services.apache-kafka = {
@@ -52,42 +52,42 @@
   #};
 
   # Symbolicator
-  services.symbolicator = {
-    enable = true;
-    package = pkgs.symbolicator;
-    settings = {
-      "bind" = "0.0.0.0:3021";
-    };
-  };
+  #services.symbolicator = {
+  #  enable = true;
+  #  package = pkgs.symbolicator;
+  #  settings = {
+  #    "bind" = "0.0.0.0:3021";
+  #  };
+  #};
 
   # Sentry Web und Worker
-  services.sentry = {
-    enable = true;
-    package = pkgs.sentry;
-    web = {
-      enable = true;
-      host = "0.0.0.0";
-      port = 9000;
-    };
-    worker = {
-      enable = true;
-    };
-    cron = {
-      enable = true;
-    };
-  };
+  #services.sentry = {
+  #  enable = true;
+  #  package = pkgs.sentry;
+  #  web = {
+  #    enable = true;
+  #    host = "0.0.0.0";
+  #    port = 9000;
+  #  };
+  #  worker = {
+  #    enable = true;
+  #  };
+  #  cron = {
+  #    enable = true;
+  #  };
+  #};
 
   # Snuba
-  services.snuba = {
-    enable = true;
-    package = pkgs.snuba;
-    settings = {
-      "broker" = "kafka://localhost:9092";
-      "clickhouse" = "http://localhost:8123";
-      "redis" = "redis://localhost:6379";
-      "zookeeper" = "localhost:2181";
-    };
-  };
+  #services.snuba = {
+  #  enable = true;
+  #  package = pkgs.snuba;
+  #  settings = {
+  #    "broker" = "kafka://localhost:9092";
+  #    "clickhouse" = "http://localhost:8123";
+  #    "redis" = "redis://localhost:6379";
+  #    "zookeeper" = "localhost:2181";
+  #  };
+  #};
 
   # Sentry Relay
   #services.relay = {
@@ -113,8 +113,10 @@
       listen = [ { addr = "0.0.0.0"; port = 3000; } ];
       root = "/var/www/sentry";
       locations."/" = {
-        proxyPass = "http://localhost:9000";
-        proxySetHeader = "X-Relay-Host" "relay.example.com";  # Optional
+      proxyPass = "http://localhost:9000";
+      proxySetHeader = [
+        { name = "X-Relay-Host"; value = "relay.example.com"; }
+      ];  # Optional
       };
     };
   };

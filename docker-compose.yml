@@ -1,0 +1,78 @@
+# /etc/docker-compose/docker-compose.yml
+
+version: '3.4'
+
+services:
+  sentry:
+    image: getsentry/sentry:latest
+    ports:
+      - "9000:9000"
+    environment:
+      SENTRY_SECRET_KEY: "your_secret_key"
+      SENTRY_DATABASE_URL: "postgres://sentry_user:password@localhost/sentry_db"
+      SENTRY_REDIS_URL: "redis://localhost:6379"
+    volumes:
+      - /var/lib/sentry:/data
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:latest
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    volumes:
+      - /var/lib/clickhouse:/var/lib/clickhouse
+      - /var/log/clickhouse-server:/var/log/clickhouse-server
+
+  snuba-api:
+    image: getsentry/snuba:latest
+    ports:
+      - "1218:1218"
+    environment:
+      SNUBA_SETTINGS: "docker"
+      SNUBA_BROKER: "kafka://localhost:9092"
+      SNUBA_CLICKHOUSE_HOST: "clickhouse"
+      SNUBA_CLICKHOUSE_PORT: "8123"
+      SNUBA_REDIS_HOST: "localhost"
+      SNUBA_ZOOKEEPER_HOST: "localhost"
+
+  snuba-consumer:
+    image: getsentry/snuba:latest
+    environment:
+      SNUBA_SETTINGS: "docker"
+      SNUBA_BROKER: "kafka://localhost:9092"
+      SNUBA_CLICKHOUSE_HOST: "clickhouse"
+      SNUBA_CLICKHOUSE_PORT: "8123"
+      SNUBA_REDIS_HOST: "localhost"
+      SNUBA_ZOOKEEPER_HOST: "localhost"
+    command: "consumer --storage events --auto-offset-reset=latest --log-level=INFO"
+
+  snuba-replacer:
+    image: getsentry/snuba:latest
+    environment:
+      SNUBA_SETTINGS: "docker"
+      SNUBA_BROKER: "kafka://localhost:9092"
+      SNUBA_CLICKHOUSE_HOST: "clickhouse"
+      SNUBA_CLICKHOUSE_PORT: "8123"
+      SNUBA_REDIS_HOST: "localhost"
+      SNUBA_ZOOKEEPER_HOST: "localhost"
+    command: "replacer --storage events --auto-offset-reset=latest --log-level=INFO"
+
+  symbolicator:
+    image: getsentry/symbolicator:latest
+    ports:
+      - "3021:3021"
+    environment:
+      SYM_STORE_PATH: "/data"
+      BIND: "0.0.0.0:3021"
+    volumes:
+      - /var/lib/symbolicator:/data
+
+  zookeeper:
+    image: zookeeper:latest
+    ports:
+      - "2181:2181"
+    environment:
+      ZOO_MY_ID: "1"
+      ZOO_SERVERS: "server.1=0.0.0.0:2888:3888"
+    volumes:
+      - /var/lib/zookeeper:/data
