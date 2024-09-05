@@ -1,7 +1,4 @@
-# Edit this configuration file to define what should be installed on
-# your system.  Help is available in the configuration.nix(5) man page
-# and in the NixOS manual (accessible by running ‘nixos-help’).
-
+# /etc/nixos/
 { config, pkgs, ... }:
 
 {
@@ -9,7 +6,7 @@
     [ # Include the results of the hardware scan.
       ./hardware-configuration.nix
       ./remote.conf.nix
-      ./helpwave-self-hosting.conf.nix
+      ./sentry.nix
     ];
 
   # Bootloader.
@@ -20,9 +17,6 @@
   networking.hostName = "helpwave"; # Define your hostname.
   # networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
 
-  # Configure network proxy if necessary
-  # networking.proxy.default = "http://user:password@proxy:port/";
-  # networking.proxy.noProxy = "127.0.0.1,localhost,internal.domain";
 
   # Enable networking
   networking.networkmanager.enable = true;
@@ -72,18 +66,9 @@
     alsa.enable = true;
     alsa.support32Bit = true;
     pulse.enable = true;
-    # If you want to use JACK applications, uncomment this
-    #jack.enable = true;
-
-    # use the example session manager (no others are packaged yet so this is enabled by default,
-    # no need to redefine it in your config for now)
-    #media-session.enable = true;
   };
 
-  # Enable touchpad support (enabled default in most desktopManager).
-  # services.xserver.libinput.enable = true;
 
-  # Define a user account. Don't forget to set a password with ‘passwd’.
   users.users.helpwave = {
     isNormalUser = true;
     description = "helpwave";
@@ -99,40 +84,46 @@
   # Allow unfree packages
   nixpkgs.config.allowUnfree = true;
 
-  #environment.systemPackages = with pkgs; [
-  #  vim
-  #  git
-  #  wget
-  #  nano
-  #  sudo
-  #];
 
-  # Some programs need SUID wrappers, can be configured further or are
-  # started in user sessions.
-  # programs.mtr.enable = true;
-  # programs.gnupg.agent = {
-  #   enable = true;
-  #   enableSSHSupport = true;
-  # };
+  # Docker und Docker Compose aktivieren
+  services.dockerRegistry.enable = true;
+  virtualisation.docker.enable = true;
+  virtualisation.docker.registries = [ "docker.io" ];
+  virtualisation.docker.services = [
+    {
+      name = "sentry";
+      image = "getsentry/sentry:latest"; # Ersetze dies durch die passende Version
+      ports = [ "9000:9000" ];
+      environment = {
+        SENTRY_SECRET_KEY = "your_secret_key";
+        SENTRY_DATABASE_URL = "postgres://sentry_user:password@localhost/sentry_db";
+        SENTRY_REDIS_URL = "redis://localhost:6379";
+      };
+      volumes = [
+        { hostPath = "/var/lib/sentry"; containerPath = "/data" }
+      ];
+    }
+  ];
 
-  # List services that you want to enable:
 
-  # Enable the OpenSSH daemon.
-  #services.openssh.enable = true;
-  #services.openssh.settings.PermitRootLogin = "yes";
+  environment.systemPackages = with pkgs; [
+    git
+    makeWrapper
+    vim
+    git
+    wget
+    nano
+    sudo
+    docker-compose
+    docker_27
+  ];
 
-  # Open ports in the firewall.
-  #networking.firewall.allowedTCPPorts = [ 22 80 443 3389 ];
-  #networking.firewall.allowedUDPPorts = [ 22 80 443 3389 ];
-  # Or disable the firewall altogether.
-  networking.firewall.enable = false;
+  networking.firewall = {
+    enable = true;
+    allowedTCPPorts = [ 22 80 443 9000 3000 9092 2181 8123 6379 ];
+    allowedUDPPorts = [];
+  };
 
-  # This value determines the NixOS release from which the default
-  # settings for stateful data, like file locations and database versions
-  # on your system were taken. It‘s perfectly fine and recommended to leave
-  # this value at the release version of the first install of this system.
-  # Before changing this value read the documentation for this option
-  # (e.g. man configuration.nix or on https://nixos.org/nixos/options.html).
-  system.stateVersion = "24.05"; # Did you read the comment?
 
+  system.stateVersion = "24.05";
 }

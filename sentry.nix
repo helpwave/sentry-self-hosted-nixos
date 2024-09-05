@@ -1,22 +1,8 @@
+# /etc/nixos/sentry.nix
 { config, pkgs, ... }:
 
 {
-  # Docker und Docker Compose aktivieren
-  services.dockerRegistry.enable = true;
-  virtualisation.docker.enable = true;
-
-  # Sentry Konfiguration
-  environment.systemPackages = with pkgs; [
-    git
-    makeWrapper
-    vim
-    git
-    wget
-    nano
-    sudo
-    docker-compose
-    docker_27
-  ];
+  ## DINSTE: Sentry, PostgreSQL, Redis, Kafka, Zookeeper, Clickhouse, Symbolicator, Relay
 
   # PostgreSQL und Redis wie vorher
   services.postgresql = {
@@ -120,6 +106,18 @@
     SENTRY_REDIS_URL = "redis://localhost:6379";
   };
 
+  services.nginx = {
+    enable = true;
+    virtualHosts."sentry.example.com" = {
+      root = "/var/www/sentry";
+      locations."/" = {
+        proxyPass = "http://localhost:9000";
+      };
+    };
+  };
+
   #conterner
+
+
 
 }
